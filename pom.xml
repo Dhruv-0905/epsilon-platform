@@ -1,34 +1,34 @@
-<?xml version = "1.0" encoding="UTF-8">
-<project xmlns="https://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="https://w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelversion>4.0.0</modelversion>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
     <groupId>com.financetracker</groupId>
-    <artifactId>Personal-finanace-tracker-api</artifactId>
+    <artifactId>personal-finance-tracker-api</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-
-    <name>Personal Finanace Tracker API</name>
+    
+    <name>Personal Finance Tracker API</name>
     <description>RESTful API for personal finance management with time series data analysis</description>
-
+    
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.boot.version>3.1.5</spring.boot.version>
     </properties>
-
+    
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</verison>
+        <version>3.1.5</version>
         <relativePath/>
     </parent>
-
+    
     <dependencies>
-        <!--spring boot starters-->
+        <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -45,27 +45,27 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
+        
         <!-- Database -->
         <dependency>
-            <groupId>postgresql</groupId>
+            <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
-
-        <!-- boiler plate reduction -->
+        
+        <!-- Lombok for reducing boilerplate -->
         <dependency>
             <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactid>
+            <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
-        <!--Doceumentation-->
+        
+        <!-- Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.2.0</version>
         </dependency>
-
+        
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -78,7 +78,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
+    
     <build>
         <plugins>
             <plugin>
@@ -96,6 +96,3 @@
         </plugins>
     </build>
 </project>
-
-
-
