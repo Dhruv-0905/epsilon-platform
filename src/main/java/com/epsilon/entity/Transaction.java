@@ -33,7 +33,7 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Transaction Type is required")
     @Column(name = "transaction_type", nullable = false)
-    private String transactionType;
+    private TransactionType transactionType;
 
     @Column(name = "description")
     private String description;
