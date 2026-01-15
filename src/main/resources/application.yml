@@ -4,22 +4,27 @@ server:
 spring:
   application:
     name: epsilon
-  
+
   datasource:
-    # Uses Env Vars with local fallbacks for development
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/finance_tracker}
-    username: ${DB_USERNAME:finance_user}
+    # ---------------------------------------------------------
+    # FIX: Construct the URL using your separate Render variables
+    # ---------------------------------------------------------
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finance_tracker}?sslmode=require
+    username: ${DB_USER:finance_user}
     password: ${DB_PASSWORD:finance_pass123}
     driver-class-name: org.postgresql.Driver
-    
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+      ddl-auto: update
+      show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+  # ... (Rest of your file remains the same)
+
         
   sql:
     init:
