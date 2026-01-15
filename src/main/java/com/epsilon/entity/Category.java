@@ -1,4 +1,4 @@
-package main.java.com.financetracker.entity;
+package com.epsilon.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -15,12 +15,12 @@ import java.util.List;
 @Table(name = "Catogories")
 @Data
 @NoArgsConstructor
-@AllArgsConstrucor
+@AllArgsConstructor
 
-public class Catogery {
+public class Category {
     
     @Id
-    @GeneratedValue(stratergy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "Category name is required")

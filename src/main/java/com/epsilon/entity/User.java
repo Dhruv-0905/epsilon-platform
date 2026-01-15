@@ -1,14 +1,14 @@
-package main.java.com.financetracker.entity;
+package com.epsilon.entity;
 
-import jakarta.presistence.*;
-import jakarta.Validation.constraints.Email;
-import jakarta.Validation.constraints.NotBlank;
-import jakarta.Validation.constraints.Size;
-import lombok.AllArgsConstrucor;
-import lombok.Date;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import otg.hibernate.annotaitons.UpdateTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.lang.annotation.Inherited;
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ import java.util.List;
 
 public class User{
     @Id
-    @GeneratedValue(stratergy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @NotBlank(message = "First name is a Mandatory Field")
@@ -37,7 +37,7 @@ public class User{
 
     @Email(message = "Enter a valid Email")
     @NotBlank(message = "Email is required")
-    @Colums(nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @NotBlank(message = "Passoword is Required")
@@ -49,14 +49,14 @@ public class User{
     private Boolean isActive = true;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updateable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "User", cascade = cascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Account> accounts = new ArrayList<>();
 
 }

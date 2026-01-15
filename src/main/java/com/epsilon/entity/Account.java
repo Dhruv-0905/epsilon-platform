@@ -1,20 +1,21 @@
-package main.java.com.financetracker.entity;
+package com.epsilon.entity;
 
-import com.financetracker.enums.AccountType;
-import jakarta.presistence.*;
+import com.epsilon.enums.AccountType;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstrucor;
+import lombok.AllArgsConstructor;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotaitons.CreationTimestamp;
-import org.hibernate.annotaitons.UpdateTimestamp;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.beans.ConstructorProperties;
 import java.lang.annotation.Inherited;
 import java.math.BigDecimal;
-import java.math.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,18 +24,18 @@ import java.util.List;
 @Table (name = "accounts")
 @Data
 @NoArgsConstructor
-@AllArgsConstrucor
+@AllArgsConstructor
 public class Account{
 
     @Id
-    @GeneratedValue (stratergy = GenerationType.IDENTITY)
+    @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "Account name is Required")
     @Column(name = "account_name", nullable = false)
     private String accountName;
 
-    @Enumerated(EnumType.String)
+    @Enumerated(EnumType.STRING)
     @NotNull(message = "Account Type is Required")
     @Column(name = "account_type", nullable = false)
     private AccountType accountType;
@@ -53,7 +54,7 @@ public class Account{
     private Boolean isActive = true;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updateable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime creationAt;
 
     @UpdateTimestamp
@@ -65,9 +66,9 @@ public class Account{
     private User user;
 
     @OneToMany(mappedBy = "fromAccount", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Transactions> outgoingTransactions = new ArrayList<>();
+    private List<Transaction> outgoingTransactions = new ArrayList<>();
 
     @OneToMany(mappedBy = "toAccount", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Transactions> incomingTransactions = new ArrayList<>();
+    private List<Transaction> incomingTransactions = new ArrayList<>();
 
 }

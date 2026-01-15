@@ -5,13 +5,13 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     
-    <groupId>com.financetracker</groupId>
-    <artifactId>personal-finance-tracker-api</artifactId>
+    <groupId>com.epsilon</groupId>
+    <artifactId>epsilon-platform</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
     
-    <name>Personal Finance Tracker API</name>
-    <description>RESTful API for personal finance management with time series data analysis</description>
+    <name>Epsilon</name>
+    <description>GenAI-Powered Financial Platform designed to be a high-impact portfolio piece.</description>
     
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

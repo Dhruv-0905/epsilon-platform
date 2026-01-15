@@ -1,4 +1,4 @@
-package main.java.com.financetracker.enums;
+package com.epsilon.enums;
 
 public enum TransactionType {
     INCOME("Income"),
