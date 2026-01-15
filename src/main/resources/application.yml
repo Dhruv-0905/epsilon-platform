@@ -6,9 +6,10 @@ spring:
     name: epsilon
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_tracker
-    username: finance_user
-    password: finance_pass123
+    # Uses Env Vars with local fallbacks for development
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/finance_tracker}
+    username: ${DB_USERNAME:finance_user}
+    password: ${DB_PASSWORD:finance_pass123}
     driver-class-name: org.postgresql.Driver
     
   jpa:
