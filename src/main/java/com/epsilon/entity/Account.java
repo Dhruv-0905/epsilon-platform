@@ -1,19 +1,17 @@
 package com.epsilon.entity;
 
 import com.epsilon.enums.AccountType;
+import com.epsilon.enums.Currency;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.beans.ConstructorProperties;
-import java.lang.annotation.Inherited;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,10 +26,10 @@ import java.util.List;
 public class Account{
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Account name is Required")
+    @NotBlank(message = "Account name is required")
     @Column(name = "account_name", nullable = false)
     private String accountName;
 
@@ -40,14 +38,20 @@ public class Account{
     @Column(name = "account_type", nullable = false)
     private AccountType accountType;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Balance must be a positive")
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Currency is Required")
+    @Column(name = "currency", nullable = false)
+    private Currency currency;
+
+    @NotNull(message = "Balance cannot be null")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Balance must be a positive")
     @Column(name = "balance", precision = 15, scale = 2, nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @Column(name = "account number", nullable = false, unique = true)
+    @Column(name = "account_number", unique = true)
     private Long accountNumber;
 
-    @Column(name = "bank name")
+    @Column(name = "bank_name")
     private String bankName;
 
     @Column(name = "is_active", nullable = false)
@@ -55,7 +59,7 @@ public class Account{
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime creationAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

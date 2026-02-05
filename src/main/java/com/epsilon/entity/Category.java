@@ -2,6 +2,7 @@ package com.epsilon.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,11 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "Catogories")
+@Table(name = "categories")  // FIX: Typo "Catogories"
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class Category {
     
     @Id
@@ -27,10 +27,10 @@ public class Category {
     @Column(name = "category_name", nullable = false)
     private String categoryName;
     
-    @Column(name = "description")
+    @Column(name = "description", length = 255)
     private String description;
     
-    @Column(name = "color_code")
+    @Column(name = "color_code", length = 7)
     private String colorCode;
     
     @Column(name = "is_active", nullable = false)
@@ -40,6 +40,7 @@ public class Category {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
+    @NotNull(message = "Category must belong to a user")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

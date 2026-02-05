@@ -1,6 +1,7 @@
 package com.epsilon.entity;
 
 import com.epsilon.enums.TransactionType;
+import com.epsilon.enums.Currency;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +11,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.lang.annotation.Inherited;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -26,9 +26,15 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Amount cannot be null")
     @DecimalMin(value = "0.01", message = "Amount must be positive")
     @Column(name = "amount", precision = 15, scale = 2, nullable= false)
     private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Currency is required")
+    @Column(name = "currency", nullable = false)
+    private Currency currency;
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Transaction Type is required")
@@ -47,7 +53,7 @@ public class Transaction {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false, updatable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,6 +65,6 @@ public class Transaction {
     private Account toAccount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "catogery_id")
+    @JoinColumn(name = "category_id")
     private Category category;
 }
