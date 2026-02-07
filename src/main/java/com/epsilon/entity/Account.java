@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Entity
 @Table (name = "accounts")
 @Data
@@ -74,5 +73,4 @@ public class Account{
 
     @OneToMany(mappedBy = "toAccount", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Transaction> incomingTransactions = new ArrayList<>();
-
 }

@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "categories")  // FIX: Typo "Catogories"
+@Table(name = "categories") 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
