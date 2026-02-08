@@ -47,8 +47,9 @@ public class Account{
     @Column(name = "balance", precision = 15, scale = 2, nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @Column(name = "account_number", unique = true)
-    private Long accountNumber;
+    @NotBlank(message = "Account number is required")
+    @Column(name = "account_number", unique = true, nullable = false, length = 20)
+    private String accountNumber;
 
     @Column(name = "bank_name")
     private String bankName;
