@@ -45,7 +45,7 @@ public class User{
     @NotBlank(message = "Password is Required")
     @Size(min = 8, message = "Password should be 8 at least characters long")
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Default Currency is required")
