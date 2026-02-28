@@ -49,6 +49,27 @@ springdoc:
     path: /swagger-ui.html
 
 # ===================================================================
+# SPRING TASK SCHEDULING CONFIGURATION
+# ===================================================================
+
+spring:
+  application:
+    name: epsilon
+  task:
+    scheduling:
+      # Thread pool size for scheduled tasks
+      pool:
+        size: 2
+      
+      # Thread name prefix for easier log tracking
+      thread-name-prefix: epsilon-scheduler-
+      
+      # Shutdown configuration
+      shutdown:
+        await-termination: true
+        await-termination-period: 60s
+
+# ===================================================================
 # EPSILON PLATFORM CONFIGURATION
 # Module 2: The Vault - Recurring Transaction Scheduler
 # ===================================================================
@@ -74,23 +95,4 @@ epsilon:
       # Default: Asia/Kolkata (IST)
       timezone: ${RECURRING_SCHEDULER_TIMEZONE:Asia/Kolkata}
 
-# ===================================================================
-# SPRING TASK SCHEDULING CONFIGURATION
-# ===================================================================
 
-spring:
-  application:
-    name: epsilon
-  task:
-    scheduling:
-      # Thread pool size for scheduled tasks
-      pool:
-        size: 2
-      
-      # Thread name prefix for easier log tracking
-      thread-name-prefix: epsilon-scheduler-
-      
-      # Shutdown configuration
-      shutdown:
-        await-termination: true
-        await-termination-period: 60s
