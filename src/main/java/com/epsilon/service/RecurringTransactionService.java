@@ -20,6 +20,14 @@ import java.util.Optional;
 /**
  * Service layer for managing recurring transaction rules
  * and triggering actual Transactions from those rules.
+ * 
+ * This service handles:
+ * - Creating and managing recurring transaction rules
+ * - Processing due recurring transactions automatically
+ * - Generating actual Transaction records from recurring rules
+ * 
+ * @author Epsilon Platform
+ * @version 2.0 (Module 2A - The Vault)
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +41,17 @@ public class RecurringTransactionService {
 
     /**
      * Create a new recurring transaction rule.
+     * 
+     * Validates:
+     * - User exists
+     * - Account exists and belongs to user
+     * - Start date is not in the past (auto-corrects to today)
+     * - End date is after start date
+     * 
+     * @param userId ID of the user creating the recurring rule
+     * @param recurring The recurring transaction rule to create
+     * @return The saved recurring transaction with generated ID and nextRunDate
+     * @throws IllegalArgumentException if validation fails
      */
     @Transactional
     public RecurringTransaction createRecurringTransaction(Long userId, RecurringTransaction recurring) {
@@ -71,44 +90,113 @@ public class RecurringTransactionService {
         log.info("Recurring transaction created successfully with ID: {}", saved.getId());
         return saved;
     }
-
+    /**
+     * Get all recurring transactions for a user (both active and inactive).
+     * 
+     * @param userId The user ID
+     * @return List of all recurring transactions
+     */
     public List<RecurringTransaction> getRecurringTransactionsByUserId(Long userId) {
         log.debug("Fetching recurring transactions for user ID: {}", userId);
         return recurringRepository.findByUserId(userId);
     }
-
+        /**
+     * Get only active recurring transactions for a user.
+     * 
+     * @param userId The user ID
+     * @return List of active recurring transactions
+     */
     public List<RecurringTransaction> getActiveRecurringTransactionsByUserId(Long userId) {
         log.debug("Fetching active recurring transactions for user ID: {}", userId);
         return recurringRepository.findByUserIdAndIsActiveTrue(userId);
     }
-
+        /**
+     * Get a specific recurring transaction by ID.
+     * 
+     * @param id The recurring transaction ID
+     * @return Optional containing the recurring transaction if found
+     */
     public Optional<RecurringTransaction> getRecurringTransactionById(Long id) {
         return recurringRepository.findById(id);
     }
 
     /**
-     * Called by a scheduled job (to be added later) to process all due rules.
+     * Get a specific recurring transaction by ID.
+     * 
+     * @param id The recurring transaction ID
+     * @return Optional containing the recurring transaction if found
+     */
+    public Optional<RecurringTransaction> getRecurringTransactionById(Long id) {
+        return recurringRepository.findById(id);
+    }
+
+    /**
+     * Process all due recurring transactions.
+     * 
+     * This method is called by:
+     * - Scheduled job (daily at 2 AM IST)
+     * - Manual trigger endpoint (for testing/recovery)
+     * 
+     * For each due recurring rule:
+     * 1. Creates a new Transaction in Module 1
+     * 2. Updates the nextRunDate to the next occurrence
+     * 3. Deactivates the rule if past end date
+     * 
+     * Errors are logged but don't stop processing of other rules.
+     * 
+     * @return Number of successfully processed recurring transactions
      */
     @Transactional
-    public void processDueRecurringTransactions() {
+    public int processDueRecurringTransactions() {
         LocalDate today = LocalDate.now();
-        log.info("Processing recurring transactions for date: {}", today);
+        log.info("┌─────────────────────────────────────────────────────────┐");
+        log.info("│ Processing Recurring Transactions for: {}         │", today);
+        log.info("└─────────────────────────────────────────────────────────┘");
 
         List<RecurringTransaction> due = recurringRepository.findDueRecurringTransactions(today);
-        log.info("Found {} due recurring transactions", due.size());
+        log.info("Found {} due recurring transaction(s)", due.size());
+
+        if (due.isEmpty()) {
+            log.info("No recurring transactions due for processing today");
+            return 0;
+        }
+
+        int successCount = 0;
+        int failureCount = 0;
 
         for (RecurringTransaction recurring : due) {
             try {
                 processRecurringTransaction(recurring);
+                successCount++;
+                log.info("✓ Processed recurring ID: {} - {} [{}]", 
+                         recurring.getId(), 
+                         recurring.getDescription(),
+                         recurring.getAmount());
             } catch (Exception e) {
-                log.error("Failed to process recurring transaction ID: {} - {}",
-                          recurring.getId(), e.getMessage(), e);
+                failureCount++;
+                log.error("✗ Failed recurring ID: {} - {} - Error: {}", 
+                          recurring.getId(), 
+                          recurring.getDescription(),
+                          e.getMessage(), e);
             }
         }
 
-        log.info("Completed processing recurring transactions");
-    }
+        log.info("┌─────────────────────────────────────────────────────────┐");
+        log.info("│ Processing Complete                                     │");
+        log.info("│ Success: {} | Failed: {} | Total: {}                  │", 
+                 successCount, failureCount, due.size());
+        log.info("└─────────────────────────────────────────────────────────┘");
 
+        return successCount;
+    }
+    /**
+     * Process a single recurring transaction.
+     * 
+     * Creates a new Transaction and updates the recurring rule's nextRunDate.
+     * If the rule has passed its end date, it will be deactivated.
+     * 
+     * @param recurring The recurring transaction to process
+     */
     private void processRecurringTransaction(RecurringTransaction recurring) {
         log.debug("Processing recurring transaction ID: {}", recurring.getId());
 
@@ -147,7 +235,23 @@ public class RecurringTransactionService {
 
         recurringRepository.save(recurring);
     }
-
+    /**
+     * Update an existing recurring transaction rule.
+     * 
+     * Only modifiable fields:
+     * - description
+     * - amount
+     * - frequency
+     * - endDate
+     * - category
+     * 
+     * Start date and next run date are not modifiable to maintain audit trail.
+     * 
+     * @param id The ID of the recurring transaction to update
+     * @param updated The updated recurring transaction data
+     * @return The updated recurring transaction
+     * @throws IllegalArgumentException if recurring transaction not found
+     */
     @Transactional
     public RecurringTransaction updateRecurringTransaction(Long id, RecurringTransaction updated) {
         log.info("Updating recurring transaction with ID: {}", id);
