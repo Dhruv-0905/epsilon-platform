@@ -79,7 +79,7 @@ epsilon:
       #   - Every 30 seconds (testing): */30 * * * * *
       #   - Every hour: 0 0 * * * *
       #   - Every day at 2 AM: 0 0 2 * * *
-      cron: ${RECURRING_SCHEDULER_CRON:0 0 2 * * *}
+      cron: ${RECURRING_SCHEDULER_CRON:*/30 * * * * *}
       
       # Timezone for scheduler execution
       # Important: Recurring transactions will be processed in this timezone
