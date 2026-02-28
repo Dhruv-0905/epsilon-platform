@@ -1,12 +1,15 @@
 server:
   port: 8080
 
+spring:
+  application:
+    name: epsilon
+
   datasource:
     url: jdbc:postgresql://${DB_HOST}/${DB_NAME}?sslmode=require&sslfactory=org.postgresql.ssl.NonValidatingFactory
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-    
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
@@ -22,10 +25,19 @@ server:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-   
+
   sql:
     init:
       mode: always
+
+  task:
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: epsilon-scheduler-
+      shutdown:
+        await-termination: true
+        await-termination-period: 60s
 
 logging:
   level:
@@ -49,27 +61,6 @@ springdoc:
     path: /swagger-ui.html
 
 # ===================================================================
-# SPRING TASK SCHEDULING CONFIGURATION
-# ===================================================================
-
-spring:
-  application:
-    name: epsilon
-  task:
-    scheduling:
-      # Thread pool size for scheduled tasks
-      pool:
-        size: 2
-      
-      # Thread name prefix for easier log tracking
-      thread-name-prefix: epsilon-scheduler-
-      
-      # Shutdown configuration
-      shutdown:
-        await-termination: true
-        await-termination-period: 60s
-
-# ===================================================================
 # EPSILON PLATFORM CONFIGURATION
 # Module 2: The Vault - Recurring Transaction Scheduler
 # ===================================================================
@@ -88,11 +79,9 @@ epsilon:
       #   - Every 30 seconds (testing): */30 * * * * *
       #   - Every hour: 0 0 * * * *
       #   - Every day at 2 AM: 0 0 2 * * *
-      cron: ${RECURRING_SCHEDULER_CRON:*/30 * * * * *}
+      cron: ${RECURRING_SCHEDULER_CRON:0 0 2 * * *}
       
       # Timezone for scheduler execution
       # Important: Recurring transactions will be processed in this timezone
       # Default: Asia/Kolkata (IST)
       timezone: ${RECURRING_SCHEDULER_TIMEZONE:Asia/Kolkata}
-
-
