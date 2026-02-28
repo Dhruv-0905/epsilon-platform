@@ -57,39 +57,47 @@ public class RecurringTransactionService {
     public RecurringTransaction createRecurringTransaction(Long userId, RecurringTransaction recurring) {
         log.info("Creating recurring transaction for user ID: {}", userId);
 
+        // Validate user exists
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
+        // Validate account exists
         Account account = accountRepository.findById(recurring.getAccount().getId())
             .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
+        // Validate account ownership
         if (!account.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("Account does not belong to this user");
         }
 
+        // Auto-correct past start dates to today
         LocalDate today = LocalDate.now();
         if (recurring.getStartDate().isBefore(today)) {
             log.warn("Start date {} is in the past, adjusting to today", recurring.getStartDate());
             recurring.setStartDate(today);
         }
 
+        // Validate end date is after start date
         if (recurring.getEndDate() != null &&
             recurring.getEndDate().isBefore(recurring.getStartDate())) {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
+        // Set initial nextRunDate to start date
         recurring.setNextRunDate(recurring.getStartDate());
         recurring.setUser(user);
         recurring.setAccount(account);
 
+        // Default to active if not specified
         if (recurring.getIsActive() == null) {
             recurring.setIsActive(true);
         }
 
         RecurringTransaction saved = recurringRepository.save(recurring);
-        log.info("Recurring transaction created successfully with ID: {}", saved.getId());
+        log.info("✓ Recurring transaction created successfully with ID: {}", saved.getId());
         return saved;
     }
+
     /**
      * Get all recurring transactions for a user (both active and inactive).
      * 
@@ -100,7 +108,8 @@ public class RecurringTransactionService {
         log.debug("Fetching recurring transactions for user ID: {}", userId);
         return recurringRepository.findByUserId(userId);
     }
-        /**
+
+    /**
      * Get only active recurring transactions for a user.
      * 
      * @param userId The user ID
@@ -109,15 +118,6 @@ public class RecurringTransactionService {
     public List<RecurringTransaction> getActiveRecurringTransactionsByUserId(Long userId) {
         log.debug("Fetching active recurring transactions for user ID: {}", userId);
         return recurringRepository.findByUserIdAndIsActiveTrue(userId);
-    }
-        /**
-     * Get a specific recurring transaction by ID.
-     * 
-     * @param id The recurring transaction ID
-     * @return Optional containing the recurring transaction if found
-     */
-    public Optional<RecurringTransaction> getRecurringTransactionById(Long id) {
-        return recurringRepository.findById(id);
     }
 
     /**
@@ -189,6 +189,7 @@ public class RecurringTransactionService {
 
         return successCount;
     }
+
     /**
      * Process a single recurring transaction.
      * 
@@ -200,6 +201,7 @@ public class RecurringTransactionService {
     private void processRecurringTransaction(RecurringTransaction recurring) {
         log.debug("Processing recurring transaction ID: {}", recurring.getId());
 
+        // Build transaction from recurring rule
         Transaction transaction = new Transaction();
         transaction.setAmount(recurring.getAmount());
         transaction.setCurrency(recurring.getCurrency());
@@ -208,6 +210,7 @@ public class RecurringTransactionService {
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setCategory(recurring.getCategory());
 
+        // Set account based on transaction type
         switch (recurring.getTransactionType()) {
             case INCOME:
                 transaction.setToAccount(recurring.getAccount());
@@ -216,25 +219,29 @@ public class RecurringTransactionService {
                 transaction.setFromAccount(recurring.getAccount());
                 break;
             default:
-                log.error("Unsupported transaction type for recurring: {}",
+                log.error("Unsupported transaction type for recurring: {}", 
                           recurring.getTransactionType());
                 return;
         }
 
+        // Create the actual transaction (Module 1 integration)
         transactionService.createTransaction(transaction);
 
+        // Calculate next run date using frequency logic
         LocalDate nextRun = recurring.getFrequency().getNextDate(recurring.getNextRunDate());
         recurring.setNextRunDate(nextRun);
 
-        if (recurring.getEndDate() != null &&
-            nextRun.isAfter(recurring.getEndDate())) {
-            recurring.setIsActive(false);
-            log.info("Recurring transaction ID: {} deactivated (past end date)",
-                     recurring.getId());
+        // Deactivate if past end date
+        if (recurring.getEndDate() != null && nextRun.isAfter(recurring.getEndDate())) {
+            recurring.setIsActive(Boolean.FALSE);
+            log.info("Recurring transaction ID: {} deactivated (past end date: {})",
+                     recurring.getId(), recurring.getEndDate());
         }
 
+        // Save updated recurring rule
         recurringRepository.save(recurring);
     }
+
     /**
      * Update an existing recurring transaction rule.
      * 
@@ -259,15 +266,27 @@ public class RecurringTransactionService {
         RecurringTransaction existing = recurringRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Recurring transaction not found with ID: " + id));
 
+        // Update allowed fields
         existing.setDescription(updated.getDescription());
         existing.setAmount(updated.getAmount());
         existing.setFrequency(updated.getFrequency());
         existing.setEndDate(updated.getEndDate());
         existing.setCategory(updated.getCategory());
 
-        return recurringRepository.save(existing);
+        RecurringTransaction saved = recurringRepository.save(existing);
+        log.info("✓ Recurring transaction updated successfully: {}", id);
+        return saved;
     }
 
+    /**
+     * Deactivate a recurring transaction rule.
+     * 
+     * This does not delete the rule, allowing it to remain in history.
+     * User can manually reactivate if needed.
+     * 
+     * @param id The ID of the recurring transaction to deactivate
+     * @throws IllegalArgumentException if recurring transaction not found
+     */
     @Transactional
     public void deactivateRecurringTransaction(Long id) {
         log.info("Deactivating recurring transaction with ID: {}", id);
@@ -275,9 +294,9 @@ public class RecurringTransactionService {
         RecurringTransaction recurring = recurringRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Recurring transaction not found with ID: " + id));
 
-        recurring.setIsActive(false);
+        recurring.setIsActive(Boolean.FALSE);
         recurringRepository.save(recurring);
 
-        log.info("Recurring transaction deactivated successfully: {}", id);
+        log.info("✓ Recurring transaction deactivated successfully: {}", id);
     }
 }
