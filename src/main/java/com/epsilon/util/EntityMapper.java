@@ -2,6 +2,7 @@ package com.epsilon.util;
 
 import com.epsilon.dto.account.AccountResponse;
 import com.epsilon.dto.category.CategoryResponse;
+import com.epsilon.dto.recurring.ExecutionHistoryResponse;
 import com.epsilon.dto.recurring.RecurringTransactionResponse;
 import com.epsilon.dto.transaction.TransactionResponse;
 import com.epsilon.dto.user.UserResponse;
@@ -85,6 +86,26 @@ public class EntityMapper {
             recurring.getCategory() != null ? recurring.getCategory().getCategoryName() : null,
             recurring.getIsActive(),
             recurring.getCreatedAt()
+        );
+    }
+
+    /**
+     * Map a RecurringTransactionExecution entity to its response DTO.
+     *
+     * Safely handles null transaction (FAILED executions have no linked transaction).
+     */
+    public static ExecutionHistoryResponse toExecutionHistoryResponse(
+            RecurringTransactionExecution execution) {
+        return new ExecutionHistoryResponse(
+            execution.getId(),
+            execution.getRecurringTransaction().getId(),
+            execution.getRecurringTransaction().getDescription(),
+            execution.getTransaction() != null ? execution.getTransaction().getId() : null,
+            execution.getExecutionDate(),
+            execution.getStatus(),
+            execution.getErrorMessage(),
+            execution.getProcessedAmount(),
+            execution.getCreatedAt()
         );
     }
 }
