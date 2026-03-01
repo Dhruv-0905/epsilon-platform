@@ -1,5 +1,6 @@
 package com.epsilon.repository;
 
+
 import com.epsilon.entity.Account;
 import com.epsilon.entity.Category;
 import com.epsilon.entity.Transaction;
@@ -11,9 +12,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 /**
  * Repository for Transaction entity.
@@ -76,11 +79,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     
     /**
      * Find transactions for a user within a date range.
-     * 
-     * Joins through accounts to filter by user ownership.
+     *
+     * Uses LEFT JOIN on both fromAccount and toAccount sides to correctly handle
+     * all transaction types:
+     * - INCOME: only toAccount is set (fromAccount is NULL)
+     * - EXPENSE: only fromAccount is set (toAccount is NULL)
+     * - TRANSFER: both accounts are set
+     *
+     * Using implicit path navigation (t.fromAccount.user.id) generates INNER JOINs
+     * which silently excludes INCOME and EXPENSE transactions. LEFT JOIN fixes this.
      */
     @Query("SELECT t FROM Transaction t " +
-           "WHERE (t.fromAccount.user.id = :userId OR t.toAccount.user.id = :userId) " +
+           "LEFT JOIN t.fromAccount fa LEFT JOIN fa.user fu " +
+           "LEFT JOIN t.toAccount ta LEFT JOIN ta.user tu " +
+           "WHERE (fu.id = :userId OR tu.id = :userId) " +
            "AND t.transactionDate BETWEEN :startDate AND :endDate " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findByUserIdAndDateRange(
@@ -106,9 +118,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     
     /**
      * Get recent transactions for a user (for dashboard display).
+     *
+     * Uses LEFT JOIN on both fromAccount and toAccount sides to correctly handle
+     * all transaction types:
+     * - INCOME: only toAccount is set (fromAccount is NULL)
+     * - EXPENSE: only fromAccount is set (toAccount is NULL)
+     * - TRANSFER: both accounts are set
+     *
+     * Using implicit path navigation (t.fromAccount.user.id) generates INNER JOINs
+     * which silently excludes INCOME and EXPENSE transactions. LEFT JOIN fixes this.
      */
     @Query("SELECT t FROM Transaction t " +
-           "WHERE t.fromAccount.user.id = :userId OR t.toAccount.user.id = :userId " +
+           "LEFT JOIN t.fromAccount fa LEFT JOIN fa.user fu " +
+           "LEFT JOIN t.toAccount ta LEFT JOIN ta.user tu " +
+           "WHERE fu.id = :userId OR tu.id = :userId " +
            "ORDER BY t.transactionDate DESC")
     List<Transaction> findRecentByUserId(@Param("userId") Long userId, Pageable pageable);
 }
