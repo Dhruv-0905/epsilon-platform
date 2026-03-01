@@ -1,6 +1,7 @@
 package com.epsilon.controller;
 
 import com.epsilon.dto.ApiResponse;
+import com.epsilon.dto.recurring.ExecutionHistoryResponse;
 import com.epsilon.dto.recurring.RecurringTransactionRequest;
 import com.epsilon.dto.recurring.RecurringTransactionResponse;
 import com.epsilon.entity.Account;
@@ -18,7 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.epsilon.dto.recurring.ExecutionHistoryResponse;
 
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -147,4 +150,64 @@ public class RecurringTransactionController {
         recurringService.deactivateRecurringTransaction(id);
         return ResponseEntity.ok(ApiResponse.success("Recurring transaction deactivated successfully", null));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Phase 2B: Execution History & Audit Trail
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get the full execution history for a specific recurring transaction rule.
+     *
+     * Returns all past executions ordered by date descending.
+     * Each entry shows whether the run succeeded or failed, the transaction
+     * created (if any), and the amount processed.
+     *
+     * Example: GET /api/recurring-transactions/1/history
+     */
+    @GetMapping("/{id}/history")
+    @Operation(
+        summary = "Get execution history",
+        description = "Retrieve full audit trail of all executions for a recurring transaction rule"
+    )
+    public ResponseEntity<ApiResponse<List<ExecutionHistoryResponse>>> getExecutionHistory(
+            @PathVariable Long id) {
+
+        log.debug("Fetching execution history for recurring transaction: {}", id);
+
+        recurringService.getRecurringTransactionById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Recurring transaction not found with ID: " + id));
+
+        List<ExecutionHistoryResponse> history = recurringService.getExecutionHistory(id)
+            .stream()
+            .map(EntityMapper::toExecutionHistoryResponse)
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success(history));
+    }
+
+    /**
+     * Get execution statistics for a specific recurring transaction rule.
+     *
+     * Returns:
+     * - totalExecutions, successCount, failedCount, successRate
+     *
+     * Example: GET /api/recurring-transactions/1/stats
+     */
+    @GetMapping("/{id}/stats")
+    @Operation(
+        summary = "Get execution stats",
+        description = "Retrieve success rate and execution counts for a recurring transaction rule"
+    )
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getExecutionStats(
+            @PathVariable Long id) {
+
+        log.debug("Fetching execution stats for recurring transaction: {}", id);
+
+        recurringService.getRecurringTransactionById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Recurring transaction not found with ID: " + id));
+
+        Map<String, Object> stats = recurringService.getExecutionStats(id);
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
 }
