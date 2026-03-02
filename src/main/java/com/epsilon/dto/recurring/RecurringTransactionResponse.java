@@ -1,5 +1,6 @@
 package com.epsilon.dto.recurring;
 
+import com.epsilon.enums.AmountType;
 import com.epsilon.enums.Currency;
 import com.epsilon.enums.RecurringFrequency;
 import com.epsilon.enums.TransactionType;
@@ -11,9 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * DTO for recurring transaction response.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,5 +32,13 @@ public class RecurringTransactionResponse {
     private Boolean isActive;
     private Boolean isPaused;
     private String pauseReason;
+
+    // Phase 2D ────────────────────────────
+    private AmountType amountType;
+    private BigDecimal percentageValue;
+    private BigDecimal minimumBalanceThreshold;
+    private Boolean skipWeekends;
+    // ─────────────────────────────────────
+
     private LocalDateTime createdAt;
 }
