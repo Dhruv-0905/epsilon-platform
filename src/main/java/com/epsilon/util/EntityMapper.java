@@ -1,5 +1,6 @@
 package com.epsilon.util;
 
+import com.epsilon.enums.AccountType;
 import com.epsilon.dto.account.AccountResponse;
 import com.epsilon.dto.category.CategoryResponse;
 import com.epsilon.dto.recurring.ExecutionHistoryResponse;
@@ -87,6 +88,10 @@ public class EntityMapper {
             recurring.getIsActive(),
             recurring.getIsPaused(),       // Phase 2C
             recurring.getPauseReason(),    // Phase 2C
+            recurring.getAmountType() != null ? recurring.getAmountType() : com.epsilon.enums.AmountType.FIXED,
+            recurring.getPercentageValue(),
+            recurring.getMinimumBalanceThreshold(),
+            Boolean.TRUE.equals(recurring.getSkipWeekends()),
             recurring.getCreatedAt()
         );
     }

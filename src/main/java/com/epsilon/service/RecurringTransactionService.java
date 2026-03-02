@@ -6,6 +6,7 @@ import com.epsilon.entity.RecurringTransaction;
 import com.epsilon.entity.RecurringTransactionExecution;
 import com.epsilon.entity.Transaction;
 import com.epsilon.entity.User;
+import com.epsilon.enums.AmountType;
 import com.epsilon.enums.ExecutionStatus;
 import com.epsilon.enums.RecurringFrequency;
 import com.epsilon.enums.TransactionType;
@@ -99,6 +100,8 @@ public class RecurringTransactionService {
         recurring.setAccount(account);
         recurring.setIsActive(true);
         recurring.setIsPaused(false);
+        recurring.setAmountType(recurring.getAmountType() != null ? recurring.getAmountType() : AmountType.FIXED);
+        recurring.setSkipWeekends(Boolean.TRUE.equals(recurring.getSkipWeekends()));
 
         RecurringTransaction saved = recurringRepository.save(recurring);
         log.info("✓ Recurring transaction created with ID: {}", saved.getId());
@@ -317,32 +320,47 @@ public class RecurringTransactionService {
     /**
      * Process a single recurring transaction.
      *
-     * Phase 2C: Before creating an EXPENSE transaction, validates the account
-     * has sufficient balance. Returns null if the transaction should be skipped.
+     * Phase 2C: Balance check for EXPENSE transactions.
+     * Phase 2D: Variable amount calculation, minimum balance threshold, weekend skip.
      *
      * @param recurring The recurring transaction to process
-     * @return The created Transaction entity, or null if skipped (insufficient balance)
+     * @return The created Transaction entity, or null if SKIPPED
      */
     private Transaction processRecurringTransaction(RecurringTransaction recurring) {
         log.debug("Processing recurring transaction ID: {}", recurring.getId());
 
-        // Phase 2C: Balance check for EXPENSE transactions
-        if (TransactionType.EXPENSE.equals(recurring.getTransactionType())) {
-            Account freshAccount = accountRepository.findById(recurring.getAccount().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + recurring.getAccount().getId()));
+        // Fetch fresh account balance for all checks
+        Account freshAccount = accountRepository.findById(recurring.getAccount().getId())
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Account not found: " + recurring.getAccount().getId()));
 
-            if (freshAccount.getBalance().compareTo(recurring.getAmount()) < 0) {
+        // Phase 2D: Minimum balance threshold check (user-defined safety floor)
+        if (recurring.getMinimumBalanceThreshold() != null) {
+            if (freshAccount.getBalance().compareTo(recurring.getMinimumBalanceThreshold()) < 0) {
+                log.warn("Minimum balance threshold not met for recurring ID: {}. " +
+                        "Balance: {}, Threshold: {}",
+                        recurring.getId(), freshAccount.getBalance(),
+                        recurring.getMinimumBalanceThreshold());
+                return null; // Signals SKIPPED
+            }
+        }
+
+        // Phase 2D: Compute actual execution amount
+        BigDecimal executionAmount = computeExecutionAmount(recurring, freshAccount);
+        log.debug("Computed execution amount for recurring ID: {} = {}", recurring.getId(), executionAmount);
+
+        // Phase 2C: Insufficient balance check for EXPENSE (uses computed amount)
+        if (TransactionType.EXPENSE.equals(recurring.getTransactionType())) {
+            if (freshAccount.getBalance().compareTo(executionAmount) < 0) {
                 log.warn("Insufficient balance for recurring ID: {}. Required: {}, Available: {}",
-                         recurring.getId(), recurring.getAmount(), freshAccount.getBalance());
-                // Return null to signal SKIPPED — nextRunDate is NOT advanced
-                // so the scheduler retries on the next run
-                return null;
+                        recurring.getId(), executionAmount, freshAccount.getBalance());
+                return null; // Signals SKIPPED
             }
         }
 
         // Build the transaction from the recurring rule
         Transaction transaction = new Transaction();
-        transaction.setAmount(recurring.getAmount());
+        transaction.setAmount(executionAmount);
         transaction.setCurrency(recurring.getCurrency());
         transaction.setTransactionType(recurring.getTransactionType());
         transaction.setDescription(recurring.getDescription() + " (Recurring)");
@@ -361,22 +379,85 @@ public class RecurringTransactionService {
                     "Unsupported transaction type for recurring: " + recurring.getTransactionType());
         }
 
-        // Create the actual transaction (Module 1 integration)
         Transaction created = transactionService.createTransaction(transaction);
 
-        // Advance the next run date
+        // Advance nextRunDate + Phase 2D: weekend skip
         LocalDate nextRun = recurring.getFrequency().getNextDate(recurring.getNextRunDate());
+        nextRun = adjustForWeekends(nextRun, recurring);
         recurring.setNextRunDate(nextRun);
 
         // Deactivate if past end date
         if (recurring.getEndDate() != null && nextRun.isAfter(recurring.getEndDate())) {
             recurring.setIsActive(false);
             log.info("Recurring ID: {} deactivated — past end date: {}",
-                     recurring.getId(), recurring.getEndDate());
+                    recurring.getId(), recurring.getEndDate());
         }
 
         recurringRepository.save(recurring);
         return created;
+    }
+
+    /**
+     * Compute the actual amount to use for this execution.
+     *
+     * FIXED:      Returns recurring.getAmount() directly.
+     * PERCENTAGE: Calculates balance * percentageValue / 100.
+     *             Caps at recurring.getAmount() as a safety maximum.
+     *
+     * @param recurring    The rule being processed
+     * @param freshAccount Account with the current live balance
+     * @return The computed execution amount, never null or zero
+     */
+    private BigDecimal computeExecutionAmount(RecurringTransaction recurring, Account freshAccount) {
+        AmountType type = recurring.getAmountType() != null ? recurring.getAmountType() : AmountType.FIXED;
+
+        if (AmountType.PERCENTAGE.equals(type) && recurring.getPercentageValue() != null) {
+            // computed = balance * (percentage / 100)
+            BigDecimal computed = freshAccount.getBalance()
+                .multiply(recurring.getPercentageValue())
+                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+
+            // Apply safety cap: never exceed the 'amount' field
+            BigDecimal cap = recurring.getAmount();
+            BigDecimal capped = computed.compareTo(cap) > 0 ? cap : computed;
+
+            log.debug("PERCENTAGE amount: {}% of {} = {} (cap: {})",
+                    recurring.getPercentageValue(), freshAccount.getBalance(), computed, cap);
+
+            // Guard: never return zero or negative
+            return capped.compareTo(BigDecimal.ZERO) > 0 ? capped : recurring.getAmount();
+        }
+        return recurring.getAmount();
+    }
+
+    /**
+     * Adjust a date forward to the next Monday if it falls on a weekend.
+     * Only applied when the rule has skipWeekends = true.
+     *
+     * Saturday → +2 days → Monday
+     * Sunday   → +1 day  → Monday
+     *
+     * @param date      The candidate next run date
+     * @param recurring The rule (checked for skipWeekends flag)
+     * @return The adjusted date (unchanged if not a weekend or skipWeekends=false)
+     */
+    private LocalDate adjustForWeekends(LocalDate date, RecurringTransaction recurring) {
+        if (!Boolean.TRUE.equals(recurring.getSkipWeekends())) {
+            return date;
+        }
+
+        switch (date.getDayOfWeek()) {
+            case SATURDAY:
+                log.debug("Recurring ID: {} — nextRunDate {} is Saturday, advancing to Monday",
+                        recurring.getId(), date);
+                return date.plusDays(2);
+            case SUNDAY:
+                log.debug("Recurring ID: {} — nextRunDate {} is Sunday, advancing to Monday",
+                        recurring.getId(), date);
+                return date.plusDays(1);
+            default:
+                return date;
+        }
     }
 
     /**
