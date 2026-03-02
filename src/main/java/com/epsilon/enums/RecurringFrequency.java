@@ -6,6 +6,11 @@ import java.time.temporal.ChronoUnit;
 /**
  * Defines how often a recurring transaction repeats.
  * Each enum knows how to calculate the next occurrence date.
+ *
+ * Phase 2D additions:
+ * - SEMI_ANNUALLY: every 6 months
+ * - Weekend adjustment is handled in RecurringTransactionService,
+ *   not here, so getNextDate() remains pure calendar arithmetic.
  */
 public enum RecurringFrequency {
     DAILY(1, ChronoUnit.DAYS),
@@ -13,6 +18,7 @@ public enum RecurringFrequency {
     BIWEEKLY(14, ChronoUnit.DAYS),
     MONTHLY(1, ChronoUnit.MONTHS),
     QUARTERLY(3, ChronoUnit.MONTHS),
+    SEMI_ANNUALLY(6, ChronoUnit.MONTHS),
     YEARLY(1, ChronoUnit.YEARS);
 
     private final long amount;
@@ -26,6 +32,7 @@ public enum RecurringFrequency {
     /**
      * Calculate the next occurrence date from a given date.
      * Example: MONTHLY.getNextDate(2024-01-15) → 2024-02-15
+     * Note: Weekend adjustment is applied downstream by the service.
      */
     public LocalDate getNextDate(LocalDate currentDate) {
         return currentDate.plus(amount, unit);

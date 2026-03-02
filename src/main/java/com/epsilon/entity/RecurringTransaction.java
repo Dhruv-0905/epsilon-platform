@@ -1,5 +1,6 @@
 package com.epsilon.entity;
 
+import com.epsilon.enums.AmountType;
 import com.epsilon.enums.Currency;
 import com.epsilon.enums.RecurringFrequency;
 import com.epsilon.enums.TransactionType;
@@ -20,9 +21,17 @@ import java.time.LocalDateTime;
 /**
  * Represents a recurring transaction rule (e.g., monthly salary, weekly groceries).
  * A scheduled job processes these rules and auto-creates Transaction records.
- * 
- * Engineering Note: We store the "rule" separately from actual Transactions.
- * This allows users to edit future occurrences without touching historical data.
+ *
+ * State model:
+ *   isActive=true,  isPaused=false → ACTIVE   (normal processing)
+ *   isActive=true,  isPaused=true  → PAUSED   (temporarily suspended)
+ *   isActive=false, isPaused=false → INACTIVE  (permanently deactivated)
+ *
+ * Phase 2D additions:
+ *   amountType            - FIXED or PERCENTAGE (default FIXED)
+ *   percentageValue       - Used when amountType=PERCENTAGE (0-100)
+ *   minimumBalanceThreshold - Skip execution if account balance < this value
+ *   skipWeekends          - Advance nextRunDate to Monday if it falls on Sat/Sun
  */
 @Entity
 @Table(name = "recurring_transactions")
@@ -95,6 +104,49 @@ public class RecurringTransaction {
     @Column(name = "pause_reason", length = 255)
     private String pauseReason;
 
+    // ── Phase 2D ──────────────────────────────────────────────────────────────
+
+    /**
+     * How the execution amount is calculated.
+     * Defaults to FIXED for full backwards compatibility.
+     * Existing rows get NULL → service treats NULL as FIXED.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "amount_type")
+    private AmountType amountType = AmountType.FIXED;
+
+    /**
+     * Percentage of account balance to use when amountType = PERCENTAGE.
+     * Value range: 0.01 – 100.00 (e.g. 10.00 = 10%).
+     * When amountType = FIXED this field is ignored.
+     * 'amount' acts as a safety cap for PERCENTAGE calculations.
+     */
+    @Column(name = "percentage_value", precision = 5, scale = 2)
+    private BigDecimal percentageValue;
+
+    /**
+     * Skip execution if account balance is below this threshold (Phase 2D).
+     * Gives users fine-grained control independent of Phase 2C's basic check.
+     *
+     * Logic (applied before amount check):
+     *   if minimumBalanceThreshold != null AND balance < threshold → SKIPPED
+     *   else Phase 2C's standard balance >= computedAmount check applies.
+     *
+     * Example: "Never process my rent rule if my balance drops below $500"
+     */
+    @Column(name = "minimum_balance_threshold", precision = 15, scale = 2)
+    private BigDecimal minimumBalanceThreshold;
+
+    /**
+     * If true, when nextRunDate falls on Saturday or Sunday it is
+     * automatically pushed forward to the following Monday.
+     *
+     * Useful for salary rules where you want processing on a business day.
+     */
+    @Column(name = "skip_weekends")
+    private Boolean skipWeekends = false;
+
+    // ── Timestamps ────────────────────────────────────────────────────────────
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -103,7 +155,7 @@ public class RecurringTransaction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    //Relationships
+    // ── Relationships ─────────────────────────────────────────────────────────
     @NotNull(message = "Account is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
