@@ -181,7 +181,8 @@ public class RecurringTransactionService {
         RecurringTransaction recurring = recurringRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Recurring transaction not found with ID: " + id));
 
-        if (!recurring.getIsActive()) {
+        // Null-safe: treats null as false (inactive)
+        if (!Boolean.TRUE.equals(recurring.getIsActive())) {
             throw new IllegalArgumentException("Cannot pause an inactive recurring transaction");
         }
 
@@ -196,7 +197,7 @@ public class RecurringTransactionService {
         log.info("✓ Recurring transaction paused: {} — reason: {}", id, recurring.getPauseReason());
         return saved;
     }
-
+    
     /**
      * Resume a previously paused recurring transaction rule.
      *

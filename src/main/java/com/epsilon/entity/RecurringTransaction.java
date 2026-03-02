@@ -85,7 +85,7 @@ public class RecurringTransaction {
      * Pause is reversible — resume restores normal processing.
      * Differs from isActive: a paused rule remains in history and can be resumed.
      */
-    @Column(name = "is_paused", nullable = false)
+    @Column(name = "is_paused")
     private Boolean isPaused = false;
 
     /**
