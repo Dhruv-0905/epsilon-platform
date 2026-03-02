@@ -8,5 +8,6 @@ package com.epsilon.enums;
  */
 public enum ExecutionStatus {
     SUCCESS,
-    FAILED
+    FAILED,
+    SKIPPED
 }

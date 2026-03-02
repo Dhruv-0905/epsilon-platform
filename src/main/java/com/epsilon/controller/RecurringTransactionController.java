@@ -1,6 +1,7 @@
 package com.epsilon.controller;
 
 import com.epsilon.dto.ApiResponse;
+import com.epsilon.dto.recurring.CreateFromTemplateRequest;
 import com.epsilon.dto.recurring.ExecutionHistoryResponse;
 import com.epsilon.dto.recurring.RecurringTransactionRequest;
 import com.epsilon.dto.recurring.RecurringTransactionResponse;
@@ -152,6 +153,109 @@ public class RecurringTransactionController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Phase 2C: Pause / Resume
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Temporarily pause a recurring transaction rule.
+     * The scheduler will skip this rule until it is resumed.
+     * nextRunDate does not advance while paused.
+     *
+     * Example: POST /api/recurring-transactions/1/pause?reason=On+vacation
+     */
+    @PostMapping("/{id}/pause")
+    @Operation(
+        summary = "Pause recurring transaction",
+        description = "Temporarily pause a rule. Scheduler skips it until resumed. nextRunDate does not advance."
+    )
+    public ResponseEntity<ApiResponse<RecurringTransactionResponse>> pauseRecurringTransaction(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason) {
+
+        log.info("Pausing recurring transaction: {}", id);
+        RecurringTransaction paused = recurringService.pauseRecurringTransaction(id, reason);
+        return ResponseEntity.ok(ApiResponse.success(
+            "Recurring transaction paused successfully", EntityMapper.toRecurringTransactionResponse(paused)));
+    }
+
+    /**
+     * Resume a previously paused recurring transaction rule.
+     * nextRunDate is reset to today if it fell behind during the pause.
+     *
+     * Example: POST /api/recurring-transactions/1/resume
+     */
+    @PostMapping("/{id}/resume")
+    @Operation(
+        summary = "Resume recurring transaction",
+        description = "Resume a paused rule. nextRunDate is reset to today if it fell behind during the pause."
+    )
+    public ResponseEntity<ApiResponse<RecurringTransactionResponse>> resumeRecurringTransaction(
+            @PathVariable Long id) {
+
+        log.info("Resuming recurring transaction: {}", id);
+        RecurringTransaction resumed = recurringService.resumeRecurringTransaction(id);
+        return ResponseEntity.ok(ApiResponse.success(
+            "Recurring transaction resumed successfully", EntityMapper.toRecurringTransactionResponse(resumed)));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Phase 2C: Templates
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get all pre-defined recurring transaction templates.
+     * Returns templateId, name, transactionType, frequency and suggestedDescription.
+     * Pass templateId to POST /from-template to create a rule instantly.
+     *
+     * Example: GET /api/recurring-transactions/templates
+     */
+    @GetMapping("/templates")
+    @Operation(
+        summary = "Get recurring transaction templates",
+        description = "Returns pre-defined templates (salary, rent, groceries etc). Use templateId with POST /from-template."
+    )
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getTemplates() {
+        log.debug("Fetching recurring transaction templates");
+        return ResponseEntity.ok(ApiResponse.success(recurringService.getTemplates()));
+    }
+
+    /**
+     * Create a recurring transaction rule from a pre-defined template.
+     * Template supplies transactionType and frequency.
+     * User supplies amount, currency, accountId and dates.
+     *
+     * Example: POST /api/recurring-transactions/user/1/from-template
+     */
+    @PostMapping("/user/{userId}/from-template")
+    @Operation(
+        summary = "Create from template",
+        description = "Create a recurring transaction rule using a pre-defined template. Call GET /templates first for valid templateIds."
+    )
+    public ResponseEntity<ApiResponse<RecurringTransactionResponse>> createFromTemplate(
+            @PathVariable Long userId,
+            @Valid @RequestBody CreateFromTemplateRequest request) {
+
+        log.info("Creating recurring transaction from template '{}' for user: {}",
+                 request.getTemplateId(), userId);
+
+        RecurringTransaction saved = recurringService.createFromTemplate(
+            userId,
+            request.getTemplateId(),
+            request.getAccountId(),
+            request.getAmount(),
+            request.getCurrency(),
+            request.getStartDate(),
+            request.getEndDate(),
+            request.getCategoryId()
+        );
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse.success("Recurring transaction created from template", 
+                  EntityMapper.toRecurringTransactionResponse(saved)));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Phase 2B: Execution History & Audit Trail
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -184,7 +288,7 @@ public class RecurringTransactionController {
 
         return ResponseEntity.ok(ApiResponse.success(history));
     }
-
+    
     /**
      * Get execution statistics for a specific recurring transaction rule.
      *

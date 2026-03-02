@@ -32,5 +32,7 @@ public class RecurringTransactionResponse {
     private Long categoryId;
     private String categoryName;
     private Boolean isActive;
+    private Boolean isPaused;
+    private String pauseReason;
     private LocalDateTime createdAt;
 }

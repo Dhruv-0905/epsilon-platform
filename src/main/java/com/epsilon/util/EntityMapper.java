@@ -85,6 +85,8 @@ public class EntityMapper {
             recurring.getCategory() != null ? recurring.getCategory().getId() : null,
             recurring.getCategory() != null ? recurring.getCategory().getCategoryName() : null,
             recurring.getIsActive(),
+            recurring.getIsPaused(),       // Phase 2C
+            recurring.getPauseReason(),    // Phase 2C
             recurring.getCreatedAt()
         );
     }
