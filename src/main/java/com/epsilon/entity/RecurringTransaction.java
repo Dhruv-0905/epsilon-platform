@@ -70,8 +70,30 @@ public class RecurringTransaction {
     @Column(name = "next_run_date", nullable = false)
     private LocalDate nextRunDate;
 
+    /**
+     * Whether this rule is permanently active.
+     * false = permanently deactivated (cannot be reactivated via normal flow).
+     */
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    /**
+     * Whether this rule is temporarily paused.
+     * true  = skip during scheduler runs (nextRunDate does NOT advance).
+     * false = process normally.
+     *
+     * Pause is reversible — resume restores normal processing.
+     * Differs from isActive: a paused rule remains in history and can be resumed.
+     */
+    @Column(name = "is_paused", nullable = false)
+    private Boolean isPaused = false;
+
+    /**
+     * Optional human-readable reason why this rule was paused
+     * Shown to user in pause/resume responses.
+     */
+    @Column(name = "pause_reason", length = 255)
+    private String pauseReason;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -81,7 +103,7 @@ public class RecurringTransaction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relationships
+    //Relationships
     @NotNull(message = "Account is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)

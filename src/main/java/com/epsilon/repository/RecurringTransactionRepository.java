@@ -43,6 +43,7 @@ public interface RecurringTransactionRepository extends JpaRepository<RecurringT
      */
     @Query("SELECT r FROM RecurringTransaction r " +
            "WHERE r.isActive = true " +
+           "AND (r.isPaused IS NULL OR r.isPaused = false)" +
            "AND r.nextRunDate <= :today " +
            "AND (r.endDate IS NULL OR r.endDate >= :today)")
     List<RecurringTransaction> findDueRecurringTransactions(@Param("today") LocalDate today);

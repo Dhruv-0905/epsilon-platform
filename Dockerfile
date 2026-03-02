@@ -7,4 +7,4 @@ RUN mvn clean package -DskipTests
 FROM openjdk:17.0.1-jdk-slim
 COPY --from=build /target/epsilon-platform-1.0.0.jar epsilon.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "epsilon.jar"]
+ENTRYPOINT ["java", "-jar", "epsilon.jar"]  
