@@ -264,7 +264,6 @@ public class RecurringTransactionService {
      *
      * @return Number of successfully processed recurring transactions
      */
-    @Transactional
     public int processDueRecurringTransactions() {
         LocalDate today = LocalDate.now();
         log.info("═══════════════════════════════════════════════════════════");
