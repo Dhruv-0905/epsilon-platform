@@ -60,6 +60,10 @@ public class RecurringTransactionController {
         recurring.setDescription(request.getDescription());
         recurring.setStartDate(request.getStartDate());
         recurring.setEndDate(request.getEndDate());
+        recurring.setAmountType(request.getAmountType());
+        recurring.setPercentageValue(request.getPercentageValue());
+        recurring.setMinimumBalanceThreshold(request.getMinimumBalanceThreshold());
+        recurring.setSkipWeekends(request.getSkipWeekends());
         
         if (request.getCategoryId() != null) {
             Category category = categoryService.getCategoryById(request.getCategoryId())
