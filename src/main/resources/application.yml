@@ -85,3 +85,13 @@ epsilon:
       # Important: Recurring transactions will be processed in this timezone
       # Default: Asia/Kolkata (IST)
       timezone: ${RECURRING_SCHEDULER_TIMEZONE:Asia/Kolkata}
+
+# ===================================================================
+# EPSILON PLATFORM CONFIGURATION
+# Module 3: Security - JWT Configuration
+# ===================================================================
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
